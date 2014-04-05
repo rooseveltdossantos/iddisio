@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iddis.io.tests", "tests\iddis.io.tests\iddis.io.tests.csproj", "{EE8408E6-FC7B-4258-89F7-5F54B37912B6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iddis.io", "src\iddis.io\iddis.io.csproj", "{C9F3C9C7-6D41-41D0-9456-596DE4D19F05}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EE8408E6-FC7B-4258-89F7-5F54B37912B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE8408E6-FC7B-4258-89F7-5F54B37912B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE8408E6-FC7B-4258-89F7-5F54B37912B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE8408E6-FC7B-4258-89F7-5F54B37912B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9F3C9C7-6D41-41D0-9456-596DE4D19F05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9F3C9C7-6D41-41D0-9456-596DE4D19F05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9F3C9C7-6D41-41D0-9456-596DE4D19F05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9F3C9C7-6D41-41D0-9456-596DE4D19F05}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
