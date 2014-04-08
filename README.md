@@ -1,4 +1,4 @@
-iddisio
+iddis.io
 =======
 
 This project is current developed by Roosevelt dos Santos Júnior, dedicate to build the best possible solution to the development Windows Desktop/Mobile/Web applications that use Redis.IO.
