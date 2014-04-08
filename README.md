@@ -1,9 +1,9 @@
 iddis.io
 =======
 
-This project is current developed by Roosevelt dos Santos Júnior, dedicate to build the best possible solution to the development Windows Desktop/Mobile/Web applications that use Redis.IO(http://www.redis.io).
+This project is current developed by Roosevelt dos Santos Júnior, dedicate to build the best possible solution to the development Windows Desktop/Mobile/Web applications that use [Redis.IO](http://www.redis.io).
 
-iddis.io is a class library, that allow the developers build applications that communicate with Redis.IO. iddis.io is builded forged with the following principles:
+**iddis.io** is a class library, that allow the developers build applications that communicate with Redis.IO. iddis.io is builded forged with the following principles:
   * Provide to the developers the full set of Redis.IO supported commands
   * Use the appropriate string-handling methods of the .NET Framework, to get the best possible performance
   * Not perform number to string data type conversions, quickly and with low memory consumption
