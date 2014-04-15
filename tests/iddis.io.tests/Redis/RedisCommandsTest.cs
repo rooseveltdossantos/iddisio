@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Text;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace iddis.io.tests.Redis
@@ -15,6 +16,7 @@ namespace iddis.io.tests.Redis
         [Test]
         public void should_get_set_protocol()
         {
+            new string(RedisCommands.SET("key", Encoding.UTF8.GetBytes("value"))).Should().Be("$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n");
             new string(RedisCommands.SET("key", "value")).Should().Be("$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n");
             
             new string(RedisCommands.SET("key", "value", 1000)).Should().Be("$3\r\nSET\r\n$3\r\nkey\r\n$5\r\nvalue\r\n$2\r\nEX\r\n$4\r\n1000\r\n");
