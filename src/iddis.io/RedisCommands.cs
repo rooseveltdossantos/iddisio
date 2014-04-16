@@ -58,6 +58,12 @@ namespace iddis.io
         private const char TYPE_BULK_STRINGS = '$';
         //private static char TYPE_ARRAYS = '*';
 
+        /// <summary>
+        /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an empty list and 0 is returned. An error is returned when the value stored at key is not a list.
+        /// </summary>
+        /// <param name="key">Key</param>
+        /// <returns>Integer reply: the length of the list at key.</returns>
+        //TODO: Perform conversion to integer value
         public static char[] LLEN(string key)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_LLEN, key);
@@ -69,6 +75,12 @@ namespace iddis.io
             return buffer;
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">String value to hold</param>
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
@@ -81,6 +93,13 @@ namespace iddis.io
             return buffer;
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">String value to hold</param>
+        /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, NXXX nxxx)
         {
             var size = NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
@@ -94,6 +113,13 @@ namespace iddis.io
             return buffer;
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">String value to hold</param>
+        /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
@@ -104,6 +130,14 @@ namespace iddis.io
             return buffer;
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">String value to hold</param>
+        /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
+        /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire, NXXX nxxx)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
@@ -116,6 +150,14 @@ namespace iddis.io
             return buffer;
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">String value to hold</param>
+        /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
+        /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire, int miliseconds)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
@@ -129,6 +171,15 @@ namespace iddis.io
             return buffer;
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">String value to hold</param>
+        /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
+        /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
+        /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
