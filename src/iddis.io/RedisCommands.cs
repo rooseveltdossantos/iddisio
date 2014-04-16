@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 
 namespace iddis.io
 {
@@ -83,7 +84,12 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
+            return SET(key, Encoding.UTF8.GetBytes(value));
+        }
+
+        public static char[] SET(string key, byte[] value)
+        {
+            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key) + CalcSizeOfBuffer(value);
             var buffer = new char[size];
 
             var i = BulkString(buffer, 0, iddisio.CMD_SET);
@@ -211,6 +217,22 @@ namespace iddis.io
             return i;
         }
 
+        private static int BulkString(char[] buffer, int i, params byte[][] words)
+        {
+            foreach (var word in words)
+            {
+                buffer[i++] = TYPE_BULK_STRINGS;
+                i += word.Length.FastToArrayChar(buffer, i);
+                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                i += CRLFLength;
+                word.CopyTo(buffer, i);
+                i += word.Length;
+                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                i += CRLFLength;
+            }
+            return i;
+        }
+
         private static int BulkString(char[] buffer, int i, params char[][] words)
         {
             foreach (char[] word in words)
@@ -239,6 +261,11 @@ namespace iddis.io
                 i += CRLFLength;
             }
             return i;
+        }
+
+        private static int CalcSizeOfBuffer(params byte[][] words)
+        {
+            return words.Sum(word => DATA_TYPE_BYTE_LENGTH + word.Length.DigitsCount() + CRLFLength + word.Length + CRLFLength);
         }
 
         private static int CalcSizeOfBuffer(params string[] words)
