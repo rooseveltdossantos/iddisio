@@ -87,6 +87,12 @@ namespace iddis.io
             return SET(key, Encoding.UTF8.GetBytes(value));
         }
 
+        /// <summary>
+        /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="value">byte[] value to hold</param>
+        /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, byte[] value)
         {
             var size = CalcSizeOfBuffer(iddisio.CMD_SET, key) + CalcSizeOfBuffer(value);
