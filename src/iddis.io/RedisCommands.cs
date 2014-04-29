@@ -48,7 +48,10 @@ namespace iddis.io
             public static readonly Tuple<NXXX, char[]>[] Values = new[] { NX, XX };
         }
 
-        private static readonly string CRLF = new string(new[] { '\r', '\n' });
+        private static readonly char CR = '\r';
+        private static readonly char LF = '\n';
+
+        private static readonly string CRLF = new string(new[] { CR, LF });
         private static readonly int CRLFLength = CRLF.Length;
         private static readonly int NXXXLength = DATA_TYPE_BYTE_LENGTH + 1 + CRLFLength + 2 + CRLFLength;
         private const byte DATA_TYPE_BYTE_LENGTH = 1;
@@ -57,7 +60,9 @@ namespace iddis.io
         //private static char TYPE_ERRORS = '-';
         //private static char TYPE_INTEGERS = ':';
         private const char TYPE_BULK_STRINGS = '$';
-        //private static char TYPE_ARRAYS = '*';
+        private static char TYPE_ARRAYS = '*';
+
+        private static readonly char[] LLENDescriptor = new[] { TYPE_ARRAYS, '2', CR, LF };
 
         /// <summary>
         /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an empty list and 0 is returned. An error is returned when the value stored at key is not a list.
@@ -67,10 +72,11 @@ namespace iddis.io
         //TODO: Perform conversion to integer value
         public static char[] LLEN(string key)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_LLEN, key);
+            var size = LLENDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_LLEN, key);
             var buffer = new char[size];
-            
-            var i = BulkString(buffer, 0, iddisio.CMD_LLEN);
+
+            LLENDescriptor.CopyTo(buffer, 0);
+            var i = BulkString(buffer, LLENDescriptor.Length, iddisio.CMD_LLEN);
             BulkString(buffer, i, key);
 
             return buffer;
@@ -87,6 +93,8 @@ namespace iddis.io
             return SET(key, Encoding.UTF8.GetBytes(value));
         }
 
+        private static readonly char[] SETDescriptor = new[] { TYPE_ARRAYS, '0', CR, LF };
+
         /// <summary>
         /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
         /// </summary>
@@ -95,10 +103,14 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, byte[] value)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key) + CalcSizeOfBuffer(value);
+            const char parameterCount = '3';
+            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key) + CalcSizeOfBuffer(value);
             var buffer = new char[size];
 
-            var i = BulkString(buffer, 0, iddisio.CMD_SET);
+            SETDescriptor.CopyTo(buffer, 0);
+            buffer[1] = parameterCount;
+
+            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET);
             i = BulkString(buffer, i, key);
             BulkString(buffer, i, value);
 
@@ -114,10 +126,15 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, NXXX nxxx)
         {
-            var size = NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
+            const char parameterCount = '4';
+
+            var size = SETDescriptor.Length + NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
             var buffer = new char[size];
 
-            var i = BulkString(buffer, 0, iddisio.CMD_SET);
+            SETDescriptor.CopyTo(buffer, 0);
+            buffer[1] = parameterCount;
+
+            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET);
             i = BulkString(buffer, i, key);
             i = BulkString(buffer, i, value);
             BulkString(buffer, i, NXBuffers.Values[(int)nxxx].Item2);
@@ -134,10 +151,15 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
+            const char parameterCount = '4';
+
+            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
             var buffer = new char[size];
 
-            var i = BulkString(buffer, 0, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            SETDescriptor.CopyTo(buffer, 0);
+            buffer[1] = parameterCount;
+
+            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
             BulkString(buffer, i, secondsToExpire);
             return buffer;
         }
@@ -152,10 +174,15 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire, NXXX nxxx)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
+            const char parameterCount = '5';
+
+            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
             var buffer = new char[size];
 
-            var i = BulkString(buffer, 0, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            SETDescriptor.CopyTo(buffer, 0);
+            buffer[1] = parameterCount;
+
+            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
             i = BulkString(buffer, i, secondsToExpire);
             BulkString(buffer, i, NXBuffers.Values[(int)nxxx].Item2);
 
@@ -172,10 +199,15 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire, int miliseconds)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
+            const char parameterCount = '5';
+
+            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
             var buffer = new char[size];
 
-            var i = BulkString(buffer, 0, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            SETDescriptor.CopyTo(buffer, 0);
+            buffer[1] = parameterCount;
+
+            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
             i = BulkString(buffer, i, secondsToExpire);
             i = BulkString(buffer, i, iddisio.PAR_SET_PX);
             BulkString(buffer, i, miliseconds);
@@ -194,10 +226,15 @@ namespace iddis.io
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
         public static char[] SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
         {
-            var size = CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
+            const char parameterCount = '6';
+
+            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
             var buffer = new char[size];
 
-            var i = BulkString(buffer, 0, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            SETDescriptor.CopyTo(buffer, 0);
+            buffer[1] = parameterCount;
+
+            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
             i = BulkString(buffer, i, secondsToExpire);
             i = BulkString(buffer, i, iddisio.PAR_SET_PX);
             i = BulkString(buffer, i, miliseconds);
