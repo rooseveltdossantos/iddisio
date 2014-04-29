@@ -36,6 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Redis\RedisCommandsTest.cs" />
+    <Compile Include="Redis\RedisConTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FluentAssertions">
@@ -44,6 +45,7 @@
     <Reference Include="nunit.framework">
       <HintPath>..\..\vendor\nunit\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="System" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
