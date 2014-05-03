@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace iddis.io
 {
     internal static class FastIntegerExtensions
     {
-        private static readonly char[] CharsTable = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+        private static readonly byte[] CharsTable = new[] { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9' };
 
         /// <summary>
         /// Preenche o buffer com os caracteres representando o valor inteiro e retorna o número de dígitos que foi preenchido no buffer
@@ -15,7 +16,7 @@ namespace iddis.io
         /// <param name="buffer">Array de caracteres que conterá a representação char do valor numérico</param>
         /// <param name="startIndex">Posição inicial no buffer onde os caracteres serão colocados</param>
         /// <returns>A quantidade de dígitos que foram escritas no array indicado por buffer</returns>
-        public static int FastToArrayChar(this int value, char[] buffer, int startIndex)
+        public static int FastToArrayChar(this int value, byte[] buffer, int startIndex)
         {
             var digits = value.DigitsCount();
             startIndex += digits;
@@ -48,10 +49,10 @@ namespace iddis.io
             public static readonly Tuple<NXXX, char[]>[] Values = new[] { NX, XX };
         }
 
-        private static readonly char CR = '\r';
-        private static readonly char LF = '\n';
+        private static readonly byte CR = (byte)'\r';
+        private static readonly byte LF = (byte)'\n';
 
-        private static readonly string CRLF = new string(new[] { CR, LF });
+        private static readonly byte[] CRLF = new[] { CR, LF };
         private static readonly int CRLFLength = CRLF.Length;
         private static readonly int NXXXLength = DATA_TYPE_BYTE_LENGTH + 1 + CRLFLength + 2 + CRLFLength;
         private const byte DATA_TYPE_BYTE_LENGTH = 1;
@@ -59,10 +60,10 @@ namespace iddis.io
         //private static char TYPE_SIMPLE_STRINGS = '+';
         //private static char TYPE_ERRORS = '-';
         //private static char TYPE_INTEGERS = ':';
-        private const char TYPE_BULK_STRINGS = '$';
-        private static char TYPE_ARRAYS = '*';
+        private const byte TYPE_BULK_STRINGS = (byte)'$';
+        private static byte TYPE_ARRAYS = (byte)'*';
 
-        private static readonly char[] LLENDescriptor = new[] { TYPE_ARRAYS, '2', CR, LF };
+        private static readonly byte[] LLENDescriptor = new[] { TYPE_ARRAYS, (byte)'2', CR, LF };
 
         /// <summary>
         /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an empty list and 0 is returned. An error is returned when the value stored at key is not a list.
@@ -70,10 +71,10 @@ namespace iddis.io
         /// <param name="key">Key</param>
         /// <returns>Integer reply: the length of the list at key.</returns>
         //TODO: Perform conversion to integer value
-        public static char[] LLEN(string key)
+        public static byte[] LLEN(string key)
         {
             var size = LLENDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_LLEN, key);
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             LLENDescriptor.CopyTo(buffer, 0);
             var i = BulkString(buffer, LLENDescriptor.Length, iddisio.CMD_LLEN);
@@ -88,12 +89,12 @@ namespace iddis.io
         /// <param name="key">key</param>
         /// <param name="value">String value to hold</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, string value)
+        public static byte[] SET(string key, string value)
         {
             return SET(key, Encoding.UTF8.GetBytes(value));
         }
 
-        private static readonly char[] SETDescriptor = new[] { TYPE_ARRAYS, '0', CR, LF };
+        private static readonly byte[] SETDescriptor = new[] { TYPE_ARRAYS, (byte)'0', CR, LF };
 
         /// <summary>
         /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
@@ -101,11 +102,11 @@ namespace iddis.io
         /// <param name="key">key</param>
         /// <param name="value">byte[] value to hold</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, byte[] value)
+        public static byte[] SET(string key, byte[] value)
         {
-            const char parameterCount = '3';
+            const byte parameterCount = (byte)'3';
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key) + CalcSizeOfBuffer(value);
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             SETDescriptor.CopyTo(buffer, 0);
             buffer[1] = parameterCount;
@@ -124,12 +125,12 @@ namespace iddis.io
         /// <param name="value">String value to hold</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, string value, NXXX nxxx)
+        public static byte[] SET(string key, string value, NXXX nxxx)
         {
-            const char parameterCount = '4';
+            const byte parameterCount = (byte)'4';
 
             var size = SETDescriptor.Length + NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             SETDescriptor.CopyTo(buffer, 0);
             buffer[1] = parameterCount;
@@ -149,12 +150,12 @@ namespace iddis.io
         /// <param name="value">String value to hold</param>
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, string value, int secondsToExpire)
+        public static byte[] SET(string key, string value, int secondsToExpire)
         {
-            const char parameterCount = '4';
+            const byte parameterCount = (byte)'4';
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             SETDescriptor.CopyTo(buffer, 0);
             buffer[1] = parameterCount;
@@ -172,12 +173,12 @@ namespace iddis.io
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, string value, int secondsToExpire, NXXX nxxx)
+        public static byte[] SET(string key, string value, int secondsToExpire, NXXX nxxx)
         {
-            const char parameterCount = '5';
+            const byte parameterCount = (byte)'5';
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             SETDescriptor.CopyTo(buffer, 0);
             buffer[1] = parameterCount;
@@ -197,12 +198,12 @@ namespace iddis.io
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, string value, int secondsToExpire, int miliseconds)
+        public static byte[] SET(string key, string value, int secondsToExpire, int miliseconds)
         {
-            const char parameterCount = '5';
+            const byte parameterCount = (byte)'5';
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             SETDescriptor.CopyTo(buffer, 0);
             buffer[1] = parameterCount;
@@ -224,12 +225,12 @@ namespace iddis.io
         /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static char[] SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
+        public static byte[] SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
         {
-            const char parameterCount = '6';
+            const byte parameterCount = (byte)'6';
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
-            var buffer = new char[size];
+            var buffer = new byte[size];
 
             SETDescriptor.CopyTo(buffer, 0);
             buffer[1] = parameterCount;
@@ -243,64 +244,65 @@ namespace iddis.io
             return buffer;
         }
 
-        private static int BulkString(char[] buffer, int i, params string[] words)
+        private static int BulkString(byte[] buffer, int i, params string[] words)
         {
+            
             foreach (var word in words)
             {
                 buffer[i++] = TYPE_BULK_STRINGS;
                 i += word.Length.FastToArrayChar(buffer, i);
-                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
-                word.CopyTo(0, buffer, i, word.Length);
+                //word.CopyTo(0, buffer, i, word.Length);
                 i += word.Length;
-                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                //CRLF.CopyTo(0, buffer, i, CRLFLength);
                 i += CRLFLength;
             }
 
             return i;
         }
 
-        private static int BulkString(char[] buffer, int i, params byte[][] words)
+        private static int BulkString(byte[] buffer, int i, params byte[][] words)
         {
             foreach (var word in words)
             {
                 buffer[i++] = TYPE_BULK_STRINGS;
                 i += word.Length.FastToArrayChar(buffer, i);
-                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
                 word.CopyTo(buffer, i);
                 i += word.Length;
-                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
             }
             return i;
         }
 
-        private static int BulkString(char[] buffer, int i, params char[][] words)
+        private static int BulkString(byte[] buffer, int i, params char[][] words)
         {
             foreach (char[] word in words)
             {
                 buffer[i++] = TYPE_BULK_STRINGS;
                 i += word.Length.FastToArrayChar(buffer, i);
-                CRLF.CopyTo(0, buffer, i, CRLFLength); i += CRLFLength;
+                CRLF.CopyTo(buffer, i); i += CRLFLength;
                 word.CopyTo(buffer, i); i += word.Length;
-                CRLF.CopyTo(0, buffer, i, CRLFLength); i += CRLFLength;
+                CRLF.CopyTo(buffer, i); i += CRLFLength;
             }
 
             return i;
         }
 
-        private static int BulkString(char[] buffer, int i, params int[] words)
+        private static int BulkString(byte[] buffer, int i, params int[] words)
         {
             foreach (var word in words)
             {
                 buffer[i] = TYPE_BULK_STRINGS;
                 i++;
                 i += word.DigitsCount().FastToArrayChar(buffer, i);
-                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
                 i += word.FastToArrayChar(buffer, i);
-                CRLF.CopyTo(0, buffer, i, CRLFLength);
+                CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
             }
             return i;
