@@ -16,7 +16,7 @@ namespace iddis.io
         /// <param name="buffer">Array de caracteres que conterá a representação char do valor numérico</param>
         /// <param name="startIndex">Posição inicial no buffer onde os caracteres serão colocados</param>
         /// <returns>A quantidade de dígitos que foram escritas no array indicado por buffer</returns>
-        public static int FastToArrayChar(this int value, byte[] buffer, int startIndex)
+        public static int FastToArrayByte(this int value, byte[] buffer, int startIndex)
         {
             var digits = value.DigitsCount();
             startIndex += digits;
@@ -40,6 +40,14 @@ namespace iddis.io
         }
     }
 
+    internal static class FastStringExtensions
+    {
+        public unsafe static void ASCIICopyTo(this string str, int sourceIndex, byte[] destination, int destinationIndex, int count)
+        {
+
+        }
+    }
+
     public class RedisCommands
     {
         private class NXBuffers
@@ -49,8 +57,8 @@ namespace iddis.io
             public static readonly Tuple<NXXX, char[]>[] Values = new[] { NX, XX };
         }
 
-        private static readonly byte CR = (byte)'\r';
-        private static readonly byte LF = (byte)'\n';
+        private const byte CR = ASCIITable.CarriageReturn;
+        private const byte LF = ASCIITable.LineFeed;
 
         private static readonly byte[] CRLF = new[] { CR, LF };
         private static readonly int CRLFLength = CRLF.Length;
@@ -60,10 +68,11 @@ namespace iddis.io
         //private static char TYPE_SIMPLE_STRINGS = '+';
         //private static char TYPE_ERRORS = '-';
         //private static char TYPE_INTEGERS = ':';
-        private const byte TYPE_BULK_STRINGS = (byte)'$';
-        private static byte TYPE_ARRAYS = (byte)'*';
+        private const byte TYPE_BULK_STRINGS = ASCIITable.DollarSign;
+        private const byte TYPE_ARRAYS = ASCIITable.Asterisk;
 
-        private static readonly byte[] LLENDescriptor = new[] { TYPE_ARRAYS, (byte)'2', CR, LF };
+        private static readonly byte[] LLENDescriptor = new[] { TYPE_ARRAYS, ASCIITable.Two, CR, LF };
+        private static readonly byte[] CMD_LLEN = new[] { ASCIITable.L, ASCIITable.L, ASCIITable.E, ASCIITable.N };
 
         /// <summary>
         /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an empty list and 0 is returned. An error is returned when the value stored at key is not a list.
@@ -73,11 +82,11 @@ namespace iddis.io
         //TODO: Perform conversion to integer value
         public static byte[] LLEN(string key)
         {
-            var size = LLENDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_LLEN, key);
+            var size = LLENDescriptor.Length + CalcSizeOfBuffer(CMD_LLEN) + CalcSizeOfBuffer(key);
             var buffer = new byte[size];
 
             LLENDescriptor.CopyTo(buffer, 0);
-            var i = BulkString(buffer, LLENDescriptor.Length, iddisio.CMD_LLEN);
+            var i = BulkString(buffer, LLENDescriptor.Length, CMD_LLEN);
             BulkString(buffer, i, key);
 
             return buffer;
@@ -246,11 +255,11 @@ namespace iddis.io
 
         private static int BulkString(byte[] buffer, int i, params string[] words)
         {
-            
+
             foreach (var word in words)
             {
                 buffer[i++] = TYPE_BULK_STRINGS;
-                i += word.Length.FastToArrayChar(buffer, i);
+                i += word.Length.FastToArrayByte(buffer, i);
                 CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
                 //word.CopyTo(0, buffer, i, word.Length);
@@ -267,7 +276,7 @@ namespace iddis.io
             foreach (var word in words)
             {
                 buffer[i++] = TYPE_BULK_STRINGS;
-                i += word.Length.FastToArrayChar(buffer, i);
+                i += word.Length.FastToArrayByte(buffer, i);
                 CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
                 word.CopyTo(buffer, i);
@@ -283,7 +292,7 @@ namespace iddis.io
             foreach (char[] word in words)
             {
                 buffer[i++] = TYPE_BULK_STRINGS;
-                i += word.Length.FastToArrayChar(buffer, i);
+                i += word.Length.FastToArrayByte(buffer, i);
                 CRLF.CopyTo(buffer, i); i += CRLFLength;
                 word.CopyTo(buffer, i); i += word.Length;
                 CRLF.CopyTo(buffer, i); i += CRLFLength;
@@ -298,10 +307,10 @@ namespace iddis.io
             {
                 buffer[i] = TYPE_BULK_STRINGS;
                 i++;
-                i += word.DigitsCount().FastToArrayChar(buffer, i);
+                i += word.DigitsCount().FastToArrayByte(buffer, i);
                 CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
-                i += word.FastToArrayChar(buffer, i);
+                i += word.FastToArrayByte(buffer, i);
                 CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
             }
