@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace iddis.io
 {
     internal static class FastIntegerExtensions
     {
-        private static readonly byte[] CharsTable = new[] { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9' };
+        private static readonly byte[] CharsTable = new[] { ASCIITable.Zero, ASCIITable.One, ASCIITable.Two, ASCIITable.Three, ASCIITable.Four, ASCIITable.Five, ASCIITable.Six, ASCIITable.Seven, ASCIITable.Eight, ASCIITable.Nine };
 
         /// <summary>
         /// Preenche o buffer com os caracteres representando o valor inteiro e retorna o número de dígitos que foi preenchido no buffer
@@ -42,9 +41,33 @@ namespace iddis.io
 
     internal static class FastStringExtensions
     {
+        /// <summary>
+        /// Copy an ASCII string to byte array
+        /// </summary>
+        /// <param name="str">ASCII string to be copied</param>
+        /// <param name="sourceIndex">Index on source string to start the copy</param>
+        /// <param name="destination">The byte[] to ASCII string to be copied</param>
+        /// <param name="destinationIndex">Index on destination to start the copy</param>
+        /// <param name="count">Count of ASCII chars to be copied from string</param>
         public unsafe static void ASCIICopyTo(this string str, int sourceIndex, byte[] destination, int destinationIndex, int count)
         {
-            fixed(char* pBytes = str)
+            fixed (char* pBytes = str)
+            {
+                var pSrc = pBytes;
+                fixed (byte* pBuffer = &destination[destinationIndex])
+                {
+                    var pDest = pBuffer;
+                    var start = sourceIndex; 
+                    var end = Math.Min(start + count, str.Length); 
+                    // I would liked to evict this for loop
+                    for (var i = sourceIndex; i < end; i++)
+                    {
+                        *pDest = (byte)*pSrc;
+                        pDest++;
+                        pSrc++;
+                    }
+                }
+            }
         }
     }
 
@@ -52,9 +75,9 @@ namespace iddis.io
     {
         private class NXBuffers
         {
-            private static readonly Tuple<NXXX, char[]> NX = new Tuple<NXXX, char[]>(NXXX.NX, new[] { 'N', 'X' });
-            private static readonly Tuple<NXXX, char[]> XX = new Tuple<NXXX, char[]>(NXXX.XX, new[] { 'X', 'X' });
-            public static readonly Tuple<NXXX, char[]>[] Values = new[] { NX, XX };
+            private static readonly Tuple<NXXX, byte[]> NX = new Tuple<NXXX, byte[]>(NXXX.NX, new[] { ASCIITable.N, ASCIITable.X });
+            private static readonly Tuple<NXXX, byte[]> XX = new Tuple<NXXX, byte[]>(NXXX.XX, new[] { ASCIITable.X, ASCIITable.X });
+            public static readonly Tuple<NXXX, byte[]>[] Values = new[] { NX, XX };
         }
 
         private const byte CR = ASCIITable.CarriageReturn;
@@ -262,9 +285,9 @@ namespace iddis.io
                 i += word.Length.FastToArrayByte(buffer, i);
                 CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
-                //word.CopyTo(0, buffer, i, word.Length);
+                word.ASCIICopyTo(0, buffer, i, word.Length);
                 i += word.Length;
-                //CRLF.CopyTo(0, buffer, i, CRLFLength);
+                CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
             }
 
@@ -284,20 +307,6 @@ namespace iddis.io
                 CRLF.CopyTo(buffer, i);
                 i += CRLFLength;
             }
-            return i;
-        }
-
-        private static int BulkString(byte[] buffer, int i, params char[][] words)
-        {
-            foreach (char[] word in words)
-            {
-                buffer[i++] = TYPE_BULK_STRINGS;
-                i += word.Length.FastToArrayByte(buffer, i);
-                CRLF.CopyTo(buffer, i); i += CRLFLength;
-                word.CopyTo(buffer, i); i += word.Length;
-                CRLF.CopyTo(buffer, i); i += CRLFLength;
-            }
-
             return i;
         }
 
