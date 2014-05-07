@@ -77,13 +77,13 @@ namespace iddis.io
         {
             private static readonly Tuple<NXXX, byte[]> NX = new Tuple<NXXX, byte[]>(NXXX.NX, new[] { ASCIITable.N, ASCIITable.X });
             private static readonly Tuple<NXXX, byte[]> XX = new Tuple<NXXX, byte[]>(NXXX.XX, new[] { ASCIITable.X, ASCIITable.X });
-            public static readonly Tuple<NXXX, byte[]>[] Values = new[] { NX, XX };
+            public static readonly Tuple<NXXX, byte[]>[] Values = { NX, XX };
         }
 
         private const byte CR = ASCIITable.CarriageReturn;
         private const byte LF = ASCIITable.LineFeed;
 
-        private static readonly byte[] CRLF = new[] { CR, LF };
+        private static readonly byte[] CRLF = { CR, LF };
         private static readonly int CRLFLength = CRLF.Length;
         private static readonly int NXXXLength = DATA_TYPE_BYTE_LENGTH + 1 + CRLFLength + 2 + CRLFLength;
         private const byte DATA_TYPE_BYTE_LENGTH = 1;
@@ -94,8 +94,8 @@ namespace iddis.io
         private const byte TYPE_BULK_STRINGS = ASCIITable.DollarSign;
         private const byte TYPE_ARRAYS = ASCIITable.Asterisk;
 
-        private static readonly byte[] LLENDescriptor = new[] { TYPE_ARRAYS, ASCIITable.Two, CR, LF };
-        private static readonly byte[] CMD_LLEN = new[] { ASCIITable.L, ASCIITable.L, ASCIITable.E, ASCIITable.N };
+        private static readonly byte[] LLENDescriptor = { TYPE_ARRAYS, ASCIITable.Two, CR, LF };
+        private static readonly byte[] CMD_LLEN = { ASCIITable.L, ASCIITable.L, ASCIITable.E, ASCIITable.N };
 
         /// <summary>
         /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an empty list and 0 is returned. An error is returned when the value stored at key is not a list.
