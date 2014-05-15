@@ -4,14 +4,6 @@ using NUnit.Framework;
 
 namespace iddis.io.tests.Redis
 {
-    internal static class ByteArrayExtension
-    {
-        public static string ASCIIToString(this byte[] asciiBytes)
-        {
-            return Encoding.ASCII.GetString(asciiBytes);
-        }
-    }
-
     [TestFixture]
     public class RedisCommandsTest
     {

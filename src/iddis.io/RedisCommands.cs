@@ -6,16 +6,16 @@ namespace iddis.io
 {
     internal static class FastIntegerExtensions
     {
-        private static readonly byte[] CharsTable = new[] { ASCIITable.Zero, ASCIITable.One, ASCIITable.Two, ASCIITable.Three, ASCIITable.Four, ASCIITable.Five, ASCIITable.Six, ASCIITable.Seven, ASCIITable.Eight, ASCIITable.Nine };
+        private static readonly byte[] CharsTable = { ASCIITable.Zero, ASCIITable.One, ASCIITable.Two, ASCIITable.Three, ASCIITable.Four, ASCIITable.Five, ASCIITable.Six, ASCIITable.Seven, ASCIITable.Eight, ASCIITable.Nine };
 
         /// <summary>
         /// Preenche o buffer com os caracteres representando o valor inteiro e retorna o número de dígitos que foi preenchido no buffer
         /// </summary>
         /// <param name="value">Valor inteiro maior que zero que será convertido para string</param>
-        /// <param name="buffer">Array de caracteres que conterá a representação char do valor numérico</param>
+        /// <param name="redisBuffer">Array de caracteres que conterá a representação char do valor numérico</param>
         /// <param name="startIndex">Posição inicial no buffer onde os caracteres serão colocados</param>
         /// <returns>A quantidade de dígitos que foram escritas no array indicado por buffer</returns>
-        public static int FastToArrayByte(this int value, byte[] buffer, int startIndex)
+        public static int FastToArrayByte(this int value, RedisBuffer redisBuffer, int startIndex)
         {
             var digits = value.DigitsCount();
             startIndex += digits;
@@ -23,7 +23,7 @@ namespace iddis.io
             {
                 var rem = value % 10;
                 value /= 10;
-                buffer[--startIndex] = CharsTable[rem];
+                redisBuffer.WriteByte(CharsTable[rem], --startIndex);
             }
             return digits;
         }
@@ -46,32 +46,77 @@ namespace iddis.io
         /// </summary>
         /// <param name="str">ASCII string to be copied</param>
         /// <param name="sourceIndex">Index on source string to start the copy</param>
-        /// <param name="destination">The byte[] to ASCII string to be copied</param>
+        /// <param name="redisBuffer">The ProtocolBuffer to ASCII string to be copied</param>
         /// <param name="destinationIndex">Index on destination to start the copy</param>
         /// <param name="count">Count of ASCII chars to be copied from string</param>
-        public unsafe static void ASCIICopyTo(this string str, int sourceIndex, byte[] destination, int destinationIndex, int count)
+        public unsafe static void ASCIICopyTo(this string str, int sourceIndex, RedisBuffer redisBuffer, int destinationIndex, int count)
         {
             fixed (char* pBytes = str)
             {
                 var pSrc = pBytes;
-                fixed (byte* pBuffer = &destination[destinationIndex])
+                byte* pBuffer = redisBuffer.GetAddressFromIndex(destinationIndex);
+
+                var pDest = pBuffer;
+                var start = sourceIndex;
+                var end = Math.Min(start + count, str.Length);
+                // I would liked to evict this for loop
+                for (var i = sourceIndex; i < end; i++)
                 {
-                    var pDest = pBuffer;
-                    var start = sourceIndex; 
-                    var end = Math.Min(start + count, str.Length); 
-                    // I would liked to evict this for loop
-                    for (var i = sourceIndex; i < end; i++)
-                    {
-                        *pDest = (byte)*pSrc;
-                        pDest++;
-                        pSrc++;
-                    }
+                    *pDest = (byte)*pSrc;
+                    pDest++;
+                    pSrc++;
                 }
+
             }
         }
     }
 
-    public class RedisCommands
+    public class RedisBuffer
+    {
+        private readonly byte[] buffer;
+
+        public RedisBuffer(int size)
+        {
+            buffer = new byte[size];
+        }
+
+        /// <summary>
+        /// Copies length elements from sourceArray, starting at sourceIndex, to ProtocolBuffer, starting at destinationIndex.
+        /// </summary>
+        /// <param name="sourceArray">The <see cref="T:System.Array"/> that contains the data to copy.</param>
+        /// <param name="sourceIndex">A 32-bit integer that represents the index in the <paramref name="sourceArray"/> at which copying begins.</param>
+        /// <param name="destinationIndex">A 32-bit integer that represents the index in the ProtocolBuffer at which storing begins.</param>
+        /// <param name="length">A 32-bit integer that represents the number of elements to copy.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="sourceArray"/> is null.</exception>
+        /// <exception cref="T:System.RankException"><paramref name="sourceArray"/> have different ranks different of 1</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="sourceIndex"/> is less than the lower bound of the first dimension of <paramref name="sourceArray"/>.-or-<paramref name="destinationIndex"/> is less than Zero.-or-<paramref name="length"/> is less than zero.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="length"/> is greater than the number of elements from <paramref name="sourceIndex"/> to the end of <paramref name="sourceArray"/>.-or-<paramref name="length"/> is greater than the number of elements from <paramref name="destinationIndex"/> to greather than of size of ProtocolBuffer/>.</exception>
+        internal void CopyFrom(byte[] sourceArray, int sourceIndex, int destinationIndex, int length)
+        {
+            Array.Copy(sourceArray, sourceIndex, buffer, destinationIndex, length);
+        }
+
+        internal void WriteByte(byte value, int index)
+        {
+            buffer[index] = value;
+        }
+
+        internal unsafe byte* GetAddressFromIndex(int index)
+        {
+            fixed (byte* addressFromIndex = &buffer[index])
+            {
+                return addressFromIndex;
+            }
+        }
+
+        public string ASCIIToString()
+        {
+            return Encoding.ASCII.GetString(buffer);
+        }
+
+    }
+
+    public sealed class RedisCommands
     {
         private class NXBuffers
         {
@@ -95,7 +140,13 @@ namespace iddis.io
         private const byte TYPE_ARRAYS = ASCIITable.Asterisk;
 
         private static readonly byte[] LLENDescriptor = { TYPE_ARRAYS, ASCIITable.Two, CR, LF };
+        private static readonly int LLENDescriptorLength = LLENDescriptor.Length;
         private static readonly byte[] CMD_LLEN = { ASCIITable.L, ASCIITable.L, ASCIITable.E, ASCIITable.N };
+
+        private static readonly byte[] SETDescriptor = { TYPE_ARRAYS, ASCIITable.Null, CR, LF };
+        private static readonly int SETDescriptorLength = SETDescriptor.Length;
+        private static readonly byte[] CMD_SET = { ASCIITable.S, ASCIITable.E, ASCIITable.T };
+        
 
         /// <summary>
         /// Returns the length of the list stored at key. If key does not exist, it is interpreted as an empty list and 0 is returned. An error is returned when the value stored at key is not a list.
@@ -103,16 +154,16 @@ namespace iddis.io
         /// <param name="key">Key</param>
         /// <returns>Integer reply: the length of the list at key.</returns>
         //TODO: Perform conversion to integer value
-        public static byte[] LLEN(string key)
+        public static RedisBuffer LLEN(string key)
         {
             var size = LLENDescriptor.Length + CalcSizeOfBuffer(CMD_LLEN) + CalcSizeOfBuffer(key);
-            var buffer = new byte[size];
+            var redisBuffer = new RedisBuffer(size);
 
-            LLENDescriptor.CopyTo(buffer, 0);
-            var i = BulkString(buffer, LLENDescriptor.Length, CMD_LLEN);
-            BulkString(buffer, i, key);
+            redisBuffer.CopyFrom(LLENDescriptor, 0, 0, LLENDescriptorLength);
+            var i = BulkString(redisBuffer, LLENDescriptorLength, CMD_LLEN);
+            BulkString(redisBuffer, i, key);
 
-            return buffer;
+            return redisBuffer;
         }
 
         /// <summary>
@@ -121,12 +172,10 @@ namespace iddis.io
         /// <param name="key">key</param>
         /// <param name="value">String value to hold</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, string value)
+        public static RedisBuffer SET(string key, string value)
         {
             return SET(key, Encoding.UTF8.GetBytes(value));
         }
-
-        private static readonly byte[] SETDescriptor = new[] { TYPE_ARRAYS, (byte)'0', CR, LF };
 
         /// <summary>
         /// Set key to hold the string value. If key already holds a value, it is overwritten, regardless of its type. Any previous time to live associated with the key is discarded on successful SET operation.
@@ -134,20 +183,20 @@ namespace iddis.io
         /// <param name="key">key</param>
         /// <param name="value">byte[] value to hold</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, byte[] value)
+        public static RedisBuffer SET(string key, byte[] value)
         {
-            const byte parameterCount = (byte)'3';
-            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key) + CalcSizeOfBuffer(value);
-            var buffer = new byte[size];
+            const byte parameterCount = ASCIITable.Three;
+            var size = SETDescriptor.Length + CalcSizeOfBuffer(CMD_SET) + CalcSizeOfBuffer(key) + CalcSizeOfBuffer(value);
+            var redisBuffer = new RedisBuffer(size);
 
-            SETDescriptor.CopyTo(buffer, 0);
-            buffer[1] = parameterCount;
+            redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            redisBuffer.WriteByte(parameterCount, 1);
 
-            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET);
-            i = BulkString(buffer, i, key);
-            BulkString(buffer, i, value);
+            var i = BulkString(redisBuffer, SETDescriptor.Length, iddisio.CMD_SET);
+            i = BulkString(redisBuffer, i, key);
+            BulkString(redisBuffer, i, value);
 
-            return buffer;
+            return redisBuffer;
         }
 
         /// <summary>
@@ -157,22 +206,22 @@ namespace iddis.io
         /// <param name="value">String value to hold</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, string value, NXXX nxxx)
+        public static RedisBuffer SET(string key, string value, NXXX nxxx)
         {
-            const byte parameterCount = (byte)'4';
+            const byte parameterCount = ASCIITable.Four;
 
             var size = SETDescriptor.Length + NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
-            var buffer = new byte[size];
+            var redisBuffer = new RedisBuffer(size);
 
-            SETDescriptor.CopyTo(buffer, 0);
-            buffer[1] = parameterCount;
+            redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            redisBuffer.WriteByte(parameterCount, 1);
 
-            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET);
-            i = BulkString(buffer, i, key);
-            i = BulkString(buffer, i, value);
-            BulkString(buffer, i, NXBuffers.Values[(int)nxxx].Item2);
+            var i = BulkString(redisBuffer, SETDescriptor.Length, iddisio.CMD_SET);
+            i = BulkString(redisBuffer, i, key);
+            i = BulkString(redisBuffer, i, value);
+            BulkString(redisBuffer, i, NXBuffers.Values[(int)nxxx].Item2);
 
-            return buffer;
+            return redisBuffer;
         }
 
         /// <summary>
@@ -182,19 +231,19 @@ namespace iddis.io
         /// <param name="value">String value to hold</param>
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, string value, int secondsToExpire)
+        public static RedisBuffer SET(string key, string value, int secondsToExpire)
         {
-            const byte parameterCount = (byte)'4';
+            const byte parameterCount = ASCIITable.Four;
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
-            var buffer = new byte[size];
+            var redisBuffer = new RedisBuffer(size);
 
-            SETDescriptor.CopyTo(buffer, 0);
-            buffer[1] = parameterCount;
+            redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            redisBuffer.WriteByte(parameterCount, 1);
 
-            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
-            BulkString(buffer, i, secondsToExpire);
-            return buffer;
+            var i = BulkString(redisBuffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            BulkString(redisBuffer, i, secondsToExpire);
+            return redisBuffer;
         }
 
         /// <summary>
@@ -205,21 +254,22 @@ namespace iddis.io
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, string value, int secondsToExpire, NXXX nxxx)
+        public static RedisBuffer SET(string key, string value, int secondsToExpire, NXXX nxxx)
         {
-            const byte parameterCount = (byte)'5';
+            const byte parameterCount = ASCIITable.Five;
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
-            var buffer = new byte[size];
+            var redisBuffer = new RedisBuffer(size);
 
-            SETDescriptor.CopyTo(buffer, 0);
-            buffer[1] = parameterCount;
+            redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            redisBuffer.WriteByte(parameterCount, 1);
 
-            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
-            i = BulkString(buffer, i, secondsToExpire);
-            BulkString(buffer, i, NXBuffers.Values[(int)nxxx].Item2);
 
-            return buffer;
+            var i = BulkString(redisBuffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            i = BulkString(redisBuffer, i, secondsToExpire);
+            BulkString(redisBuffer, i, NXBuffers.Values[(int)nxxx].Item2);
+
+            return redisBuffer;
         }
 
         /// <summary>
@@ -230,22 +280,22 @@ namespace iddis.io
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, string value, int secondsToExpire, int miliseconds)
+        public static RedisBuffer SET(string key, string value, int secondsToExpire, int miliseconds)
         {
-            const byte parameterCount = (byte)'5';
+            const byte parameterCount = ASCIITable.Five;
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
-            var buffer = new byte[size];
+            var redisBuffer = new RedisBuffer(size);
 
-            SETDescriptor.CopyTo(buffer, 0);
-            buffer[1] = parameterCount;
+            redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            redisBuffer.WriteByte(parameterCount, 1);
 
-            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
-            i = BulkString(buffer, i, secondsToExpire);
-            i = BulkString(buffer, i, iddisio.PAR_SET_PX);
-            BulkString(buffer, i, miliseconds);
+            var i = BulkString(redisBuffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            i = BulkString(redisBuffer, i, secondsToExpire);
+            i = BulkString(redisBuffer, i, iddisio.PAR_SET_PX);
+            BulkString(redisBuffer, i, miliseconds);
 
-            return buffer;
+            return redisBuffer;
         }
 
         /// <summary>
@@ -257,15 +307,15 @@ namespace iddis.io
         /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static byte[] SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
+        public static RedisBuffer SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
         {
-            const byte parameterCount = (byte)'6';
+            const byte parameterCount = ASCIITable.Six;
 
             var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
-            var buffer = new byte[size];
+            var buffer = new RedisBuffer(size);
 
-            SETDescriptor.CopyTo(buffer, 0);
-            buffer[1] = parameterCount;
+            buffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            buffer.WriteByte(parameterCount, 1);
 
             var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
             i = BulkString(buffer, i, secondsToExpire);
@@ -276,51 +326,53 @@ namespace iddis.io
             return buffer;
         }
 
-        private static int BulkString(byte[] buffer, int i, params string[] words)
+        private static int BulkString(RedisBuffer redisBuffer, int i, params string[] words)
         {
 
             foreach (var word in words)
             {
-                buffer[i++] = TYPE_BULK_STRINGS;
-                i += word.Length.FastToArrayByte(buffer, i);
-                CRLF.CopyTo(buffer, i);
+                redisBuffer.WriteByte(TYPE_BULK_STRINGS, i++);
+                var wordLength = word.Length;
+                i += wordLength.FastToArrayByte(redisBuffer, i);
+                redisBuffer.CopyFrom(CRLF, 0, i, CRLFLength);
                 i += CRLFLength;
-                word.ASCIICopyTo(0, buffer, i, word.Length);
-                i += word.Length;
-                CRLF.CopyTo(buffer, i);
+                word.ASCIICopyTo(0, redisBuffer, i, wordLength);
+                i += wordLength;
+                redisBuffer.CopyFrom(CRLF, 0, i, CRLFLength);
                 i += CRLFLength;
             }
 
             return i;
         }
 
-        private static int BulkString(byte[] buffer, int i, params byte[][] words)
+        private static int BulkString(RedisBuffer redisBuffer, int i, params byte[][] words)
         {
             foreach (var word in words)
             {
-                buffer[i++] = TYPE_BULK_STRINGS;
-                i += word.Length.FastToArrayByte(buffer, i);
-                CRLF.CopyTo(buffer, i);
+                redisBuffer.WriteByte(TYPE_BULK_STRINGS, i++);
+                var wordLength = word.Length;
+                i += wordLength.FastToArrayByte(redisBuffer, i);
+                redisBuffer.CopyFrom(CRLF, 0, i, CRLFLength);
                 i += CRLFLength;
-                word.CopyTo(buffer, i);
-                i += word.Length;
-                CRLF.CopyTo(buffer, i);
+                redisBuffer.CopyFrom(word, 0, i, wordLength);
+                i += wordLength;
+                redisBuffer.CopyFrom(CRLF, 0, i, CRLFLength);
                 i += CRLFLength;
             }
             return i;
         }
 
-        private static int BulkString(byte[] buffer, int i, params int[] words)
+        private static int BulkString(RedisBuffer redisBuffer, int i, params int[] words)
         {
             foreach (var word in words)
             {
-                buffer[i] = TYPE_BULK_STRINGS;
+                redisBuffer.WriteByte(TYPE_BULK_STRINGS, i);
                 i++;
-                i += word.DigitsCount().FastToArrayByte(buffer, i);
-                CRLF.CopyTo(buffer, i);
+                i += word.DigitsCount().FastToArrayByte(redisBuffer, i);
+                redisBuffer.CopyFrom(CRLF, 0, i, CRLFLength);
                 i += CRLFLength;
-                i += word.FastToArrayByte(buffer, i);
-                CRLF.CopyTo(buffer, i);
+                i += word.FastToArrayByte(redisBuffer, i);
+                redisBuffer.CopyFrom(CRLF, 0, i, CRLFLength);
                 i += CRLFLength;
             }
             return i;

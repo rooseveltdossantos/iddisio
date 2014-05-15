@@ -32,7 +32,8 @@ namespace iddis.io.tests.Redis
             socket.Connect(Host, Port);
             try
             {
-                socket.Send(setProtocol);
+                //TODO:Rever
+                //socket.Send(setProtocol);
             }
             finally
             {
