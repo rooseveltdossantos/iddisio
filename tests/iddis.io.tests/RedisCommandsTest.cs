@@ -1,8 +1,8 @@
-﻿using System.Text;
+using System.Text;
 using FluentAssertions;
 using NUnit.Framework;
 
-namespace iddis.io.tests.Redis
+namespace iddis.io.tests
 {
     [TestFixture]
     public class RedisCommandsTest

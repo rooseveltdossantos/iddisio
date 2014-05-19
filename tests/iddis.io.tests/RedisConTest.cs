@@ -1,7 +1,7 @@
-﻿using System.Net.Sockets;
+using System.Net.Sockets;
 using NUnit.Framework;
 
-namespace iddis.io.tests.Redis
+namespace iddis.io.tests
 {
     [TestFixture]
     public class RedisConTest
