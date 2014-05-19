@@ -73,6 +73,7 @@ namespace iddis.io
 
     public class RedisBuffer
     {
+        public readonly byte[] buffer;
 
         public RedisBuffer(int size)
         {
@@ -95,11 +96,22 @@ namespace iddis.io
             Array.Copy(sourceArray, sourceIndex, buffer, destinationIndex, length);
         }
 
+        /// <summary>
+        /// Write a byte value at index.
+        /// </summary>
+        /// <param name="value">Byte value to be write.</param>
+        /// <param name="index">A 32-bit integer that represents the index in the Protocol buffer at which will be write a byte value.</param>
         internal void WriteByte(byte value, int index)
         {
             buffer[index] = value;
         }
 
+
+        /// <summary>
+        /// Get a address inside of RedisBuffer of the contiguous byte array.
+        /// </summary>
+        /// <param name="index">A 32-bit integer that represents the index in the Protocol buffer to get the address.</param>
+        /// <returns>A byte* of at the address at index position.</returns>
         internal unsafe byte* GetAddressFromIndex(int index)
         {
             fixed (byte* addressFromIndex = &buffer[index])
@@ -108,6 +120,10 @@ namespace iddis.io
             }
         }
 
+        /// <summary>
+        /// Get a .NET String from ascii RedisBuffer
+        /// </summary>
+        /// <returns>A string value of RedisBuffer</returns>
         public string ASCIIToString()
         {
             return Encoding.ASCII.GetString(buffer);
