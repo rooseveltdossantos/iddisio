@@ -33,7 +33,7 @@ namespace iddis.io.tests.Redis
             try
             {
                 //TODO:Rever
-                //socket.Send(setProtocol);
+                socket.Send(setProtocol.buffer);
             }
             finally
             {

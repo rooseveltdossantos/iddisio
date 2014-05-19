@@ -73,7 +73,6 @@ namespace iddis.io
 
     public class RedisBuffer
     {
-        private readonly byte[] buffer;
 
         public RedisBuffer(int size)
         {
