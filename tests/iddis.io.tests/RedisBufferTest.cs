@@ -31,7 +31,17 @@ namespace iddis.io.tests
         {
             var redisBuffer = new RedisBuffer(100);
             this.Invoking(x => redisBuffer.CopyFrom(null, 0, 0, 100)).ShouldThrow<ArgumentNullException>();
+        }
 
+        [Test]
+        public void should_raise_ArgumentOutOfRangeException()
+        {
+            const int lessthanZero = -1;
+            var redisBuffer = new RedisBuffer(100);
+            var arr = new byte[10];
+            this.Invoking(x => redisBuffer.CopyFrom(arr, arr.GetLowerBound(0) - 1, 0, 10)).ShouldThrow<ArgumentOutOfRangeException>();
+            this.Invoking(x => redisBuffer.CopyFrom(arr, 0, lessthanZero, 10)).ShouldThrow<ArgumentOutOfRangeException>();
+            this.Invoking(x => redisBuffer.CopyFrom(arr, 0, 0, lessthanZero)).ShouldThrow<ArgumentOutOfRangeException>();
         }
     }
 }
