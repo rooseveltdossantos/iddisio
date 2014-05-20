@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace iddis.io.tests
@@ -23,6 +24,14 @@ namespace iddis.io.tests
             redisBuffer.CopyFrom(arr, 0, 0, 100);
             byte[] raw = redisBuffer.GetRaw();
             raw.Should().BeEquivalentTo(arr);
+        }
+
+        [Test]
+        public void should_raise_ArgumentNullException()
+        {
+            var redisBuffer = new RedisBuffer(100);
+            this.Invoking(x => redisBuffer.CopyFrom(null, 0, 0, 100)).ShouldThrow<ArgumentNullException>();
+
         }
     }
 }
