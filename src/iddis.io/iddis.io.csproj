@@ -37,6 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ASCIITable.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="iddisio.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
