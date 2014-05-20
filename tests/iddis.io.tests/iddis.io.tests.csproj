@@ -36,8 +36,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Redis\RedisCommandsTest.cs" />
-    <Compile Include="Redis\RedisConTest.cs" />
+    <Compile Include="RedisBufferTest.cs" />
+    <Compile Include="RedisCommandsTest.cs" />
+    <Compile Include="RedisConTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FluentAssertions">

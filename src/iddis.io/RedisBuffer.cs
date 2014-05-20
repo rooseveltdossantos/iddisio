@@ -61,5 +61,14 @@ namespace iddis.io
             return Encoding.ASCII.GetString(buffer);
         }
 
+
+        /// <summary>
+        /// Get an array byte that is the raw buffer from RedisBuffer
+        /// </summary>
+        /// <returns>An array byte with the RedisBuffer</returns>
+        public byte[] GetRaw()
+        {
+            return buffer;
+        }
     }
 }
