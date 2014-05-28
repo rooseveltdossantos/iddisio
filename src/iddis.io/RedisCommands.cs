@@ -73,6 +73,13 @@ namespace iddis.io
 
     public sealed class RedisCommands
     {
+        private readonly RedisBuffer redisBuffer;
+
+        public RedisCommands(RedisBuffer redisBuffer)
+        {
+            this.redisBuffer = redisBuffer;
+        }
+
         private class NXBuffers
         {
             private static readonly Tuple<NXXX, byte[]> NX = new Tuple<NXXX, byte[]>(NXXX.NX, new[] { ASCIITable.N, ASCIITable.X });
@@ -109,11 +116,9 @@ namespace iddis.io
         /// <param name="key">Key</param>
         /// <returns>Integer reply: the length of the list at key.</returns>
         //TODO: Perform conversion to integer value
-        public static RedisBuffer LLEN(string key)
+        public RedisBuffer LLEN(string key)
         {
-            var size = LLENDescriptor.Length + CalcSizeOfBuffer(CMD_LLEN) + CalcSizeOfBuffer(key);
-            var redisBuffer = new RedisBuffer(size);
-
+            redisBuffer.Length = LLENDescriptor.Length + CalcSizeOfBuffer(CMD_LLEN) + CalcSizeOfBuffer(key);
             redisBuffer.CopyFrom(LLENDescriptor, 0, 0, LLENDescriptorLength);
             var i = BulkString(redisBuffer, LLENDescriptorLength, CMD_LLEN);
             BulkString(redisBuffer, i, key);
@@ -127,7 +132,7 @@ namespace iddis.io
         /// <param name="key">key</param>
         /// <param name="value">String value to hold</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, string value)
+        public RedisBuffer SET(string key, string value)
         {
             return SET(key, Encoding.UTF8.GetBytes(value));
         }
@@ -138,11 +143,10 @@ namespace iddis.io
         /// <param name="key">key</param>
         /// <param name="value">byte[] value to hold</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, byte[] value)
+        public RedisBuffer SET(string key, byte[] value)
         {
             const byte parameterCount = ASCIITable.Three;
-            var size = SETDescriptor.Length + CalcSizeOfBuffer(CMD_SET) + CalcSizeOfBuffer(key) + CalcSizeOfBuffer(value);
-            var redisBuffer = new RedisBuffer(size);
+            redisBuffer.Length = SETDescriptor.Length + CalcSizeOfBuffer(CMD_SET) + CalcSizeOfBuffer(key) + CalcSizeOfBuffer(value);
 
             redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
             redisBuffer.WriteByte(parameterCount, 1);
@@ -161,12 +165,11 @@ namespace iddis.io
         /// <param name="value">String value to hold</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, string value, NXXX nxxx)
+        public RedisBuffer SET(string key, string value, NXXX nxxx)
         {
             const byte parameterCount = ASCIITable.Four;
 
-            var size = SETDescriptor.Length + NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
-            var redisBuffer = new RedisBuffer(size);
+            redisBuffer.Length = SETDescriptor.Length + NXXXLength + CalcSizeOfBuffer(iddisio.CMD_SET, key, value);
 
             redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
             redisBuffer.WriteByte(parameterCount, 1);
@@ -186,12 +189,11 @@ namespace iddis.io
         /// <param name="value">String value to hold</param>
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, string value, int secondsToExpire)
+        public RedisBuffer SET(string key, string value, int secondsToExpire)
         {
             const byte parameterCount = ASCIITable.Four;
 
-            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
-            var redisBuffer = new RedisBuffer(size);
+            redisBuffer.Length = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire);
 
             redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
             redisBuffer.WriteByte(parameterCount, 1);
@@ -209,12 +211,11 @@ namespace iddis.io
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, string value, int secondsToExpire, NXXX nxxx)
+        public RedisBuffer SET(string key, string value, int secondsToExpire, NXXX nxxx)
         {
             const byte parameterCount = ASCIITable.Five;
+            redisBuffer.Length = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
 
-            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX) + CalcSizeOfBuffer(secondsToExpire) + NXXXLength;
-            var redisBuffer = new RedisBuffer(size);
 
             redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
             redisBuffer.WriteByte(parameterCount, 1);
@@ -235,12 +236,10 @@ namespace iddis.io
         /// <param name="secondsToExpire">Set the specified expire time, in seconds.</param>
         /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, string value, int secondsToExpire, int miliseconds)
+        public RedisBuffer SET(string key, string value, int secondsToExpire, int miliseconds)
         {
             const byte parameterCount = ASCIITable.Five;
-
-            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
-            var redisBuffer = new RedisBuffer(size);
+            redisBuffer.Length = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds);
 
             redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
             redisBuffer.WriteByte(parameterCount, 1);
@@ -262,23 +261,21 @@ namespace iddis.io
         /// <param name="miliseconds">Set the specified expire time, in milliseconds.</param>
         /// <param name="nxxx">NX -- Only set the key if it does not already exist. XX -- Only set the key if it already exist.</param>         
         /// <returns>Simple string reply: OK if SET was executed correctly. Null reply: a Null Bulk Reply is returned if the SET operation was not performed becase the user specified the NX or XX option but the condition was not met.</returns>
-        public static RedisBuffer SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
+        public RedisBuffer SET(string key, string value, int secondsToExpire, int miliseconds, NXXX nxxx)
         {
             const byte parameterCount = ASCIITable.Six;
 
-            var size = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
-            var buffer = new RedisBuffer(size);
+            redisBuffer.Length = SETDescriptor.Length + CalcSizeOfBuffer(iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX, iddisio.PAR_SET_PX) + CalcSizeOfBuffer(secondsToExpire, miliseconds) + NXXXLength;
+            redisBuffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
+            redisBuffer.WriteByte(parameterCount, 1);
 
-            buffer.CopyFrom(SETDescriptor, 0, 0, SETDescriptorLength);
-            buffer.WriteByte(parameterCount, 1);
+            var i = BulkString(redisBuffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
+            i = BulkString(redisBuffer, i, secondsToExpire);
+            i = BulkString(redisBuffer, i, iddisio.PAR_SET_PX);
+            i = BulkString(redisBuffer, i, miliseconds);
+            BulkString(redisBuffer, i, NXBuffers.Values[(int)nxxx].Item2);
 
-            var i = BulkString(buffer, SETDescriptor.Length, iddisio.CMD_SET, key, value, iddisio.PAR_SET_EX);
-            i = BulkString(buffer, i, secondsToExpire);
-            i = BulkString(buffer, i, iddisio.PAR_SET_PX);
-            i = BulkString(buffer, i, miliseconds);
-            BulkString(buffer, i, NXBuffers.Values[(int)nxxx].Item2);
-
-            return buffer;
+            return redisBuffer;
         }
 
         private static int BulkString(RedisBuffer redisBuffer, int i, params string[] words)
