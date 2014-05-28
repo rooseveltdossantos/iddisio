@@ -45,6 +45,7 @@
     </Compile>
     <Compile Include="RedisBuffer.cs" />
     <Compile Include="RedisCommands.cs" />
+    <Compile Include="RedisInvalidLengthValueException.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="iddisio.resx">

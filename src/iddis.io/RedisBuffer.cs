@@ -5,11 +5,13 @@ namespace iddis.io
 {
     public class RedisBuffer
     {
-        public readonly byte[] buffer;
+        private readonly int capacity;
+        private readonly byte[] buffer;
 
-        public RedisBuffer(int size)
+        public RedisBuffer(int capacity)
         {
-            buffer = new byte[size];
+            this.capacity = capacity;
+            buffer = new byte[capacity];
         }
 
         /// <summary>
@@ -21,7 +23,7 @@ namespace iddis.io
         /// <param name="length">A 32-bit integer that represents the number of elements to copy.</param>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="sourceArray"/> is null.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="sourceIndex"/> is less than the lower bound of the first dimension of <paramref name="sourceArray"/>.-or-<paramref name="destinationIndex"/> is less than Zero.-or-<paramref name="length"/> is less than zero.</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="length"/> is greater than the number of elements from <paramref name="sourceIndex"/> to the end of <paramref name="sourceArray"/>.-or-<paramref name="length"/> is greater than the number of elements from <paramref name="destinationIndex"/> to greather than of size of ProtocolBuffer/>.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="length"/> is greater than the number of elements from <paramref name="sourceIndex"/> to the end of <paramref name="sourceArray"/>.-or-<paramref name="length"/> is greater than the number of elements from <paramref name="destinationIndex"/> to greather than of capacity of ProtocolBuffer/>.</exception>
         internal void CopyFrom(byte[] sourceArray, int sourceIndex, int destinationIndex, int length)
         {
             Array.Copy(sourceArray, sourceIndex, buffer, destinationIndex, length);
@@ -68,6 +70,30 @@ namespace iddis.io
         public byte[] GetRaw()
         {
             return buffer;
+        }
+
+
+        private int length;
+        /// <summary>
+        /// Gets or set the length of the RedisBuffer in bytes.
+        /// </summary>
+        /// <returns>
+        /// The length of the stream in bytes.
+        /// </returns>
+        public int Length
+        {
+            get { return length; }
+            set
+            {
+                CheckLengthValue(value);
+                length = value;
+            }
+        }
+
+        private void CheckLengthValue(int value)
+        {
+            if (value > capacity || value < 0)
+                throw new RedisInvalidLengthValueException(value, capacity);
         }
     }
 }

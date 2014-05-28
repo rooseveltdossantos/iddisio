@@ -93,5 +93,19 @@ namespace iddis.io.tests
             for (byte index = 0; index < _64Bytes; index++)
                 raw[index].Should().Be(index);
         }
+
+        [Test]
+        public void should_raiseRedisBufferException_when_Length_set_to_value_greater_than_capacity()
+        {
+            var redisBuffer = new RedisBuffer(_8Bytes);
+
+            const int negativeLength = -1;
+
+            this.Invoking(x => { redisBuffer.Length = _64Bytes; }).ShouldThrow<RedisInvalidLengthValueException>();
+            this.Invoking(x => { redisBuffer.Length = negativeLength; }).ShouldThrow<RedisInvalidLengthValueException>();
+            this.Invoking(x => { redisBuffer.Length = _8Bytes; }).ShouldNotThrow<RedisInvalidLengthValueException>();
+            this.Invoking(x => { redisBuffer.Length = _8Bytes - 1; }).ShouldNotThrow<RedisInvalidLengthValueException>();
+            this.Invoking(x => { redisBuffer.Length = _8Bytes + 1; }).ShouldThrow<RedisInvalidLengthValueException>();
+        }
     }
 }
