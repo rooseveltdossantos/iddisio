@@ -59,7 +59,7 @@ namespace iddis.io
         /// <returns>A string value of RedisBuffer</returns>
         public string ASCIIToString()
         {
-            return Encoding.ASCII.GetString(buffer);
+            return Encoding.ASCII.GetString(buffer, 0, Length);
         }
 
 
